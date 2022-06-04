@@ -21,8 +21,7 @@ public class UDPClient {
 
   public void run() {
     try { 
-      //InetAddress IPAddress = InetAddress.getLocalHost();
-      boolean connection = check_connection(IPAddress); //рукопожатие
+      boolean connection = check_connection(IPAddress); 
       if (connection == false) {
         logger.info("Connection failed");
         //System.out.println("connection failed");
@@ -69,7 +68,7 @@ public class UDPClient {
 
     for (int i = 0; i < 5; i++) {
       DatagramPacket message_package = package_creation(message[i], IPAddress);
-      for (int j = 0; j < 6; j++) { //6 попыток отправить 
+      for (int j = 0; j < 6; j++) {  
         clientSocket.send(message_package);
         if (delivery_check()) break;
         waiting_time_increase();
