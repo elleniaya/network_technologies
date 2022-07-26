@@ -24,12 +24,10 @@ public class UDPClient {
       boolean connection = check_connection(IPAddress); 
       if (connection == false) {
         logger.info("Connection failed");
-        //System.out.println("connection failed");
         clientSocket.close();
         System.exit(0);
       } else {
         logger.info("Connection setup was successful!");
-        //System.out.println("connection setup was successful");
       }
       message_exchange(IPAddress);
     } catch (IOException e){
@@ -92,7 +90,6 @@ public class UDPClient {
       return true;
     } catch (SocketTimeoutException e) {
       logger.info("Response timed out");
-      //System.out.println("Response timed out");
       return false;
     } catch (IOException e) {
       e.printStackTrace();
