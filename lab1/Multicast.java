@@ -7,7 +7,7 @@ public class Multicast{
     private DatagramSocket sendSocket;
 
     private byte[] buf = new byte[256];
-    private final String ADDRESS; 
+    private final String ADDRESS;
     private final int PORT;
     private final int INTERVAL;
     private final long TIMEOUT;
@@ -28,21 +28,22 @@ public class Multicast{
         multicastSocket = new MulticastSocket(PORT);
         InetAddress mcastaddr = InetAddress.getByName(ADDRESS);
         InetSocketAddress group = new InetSocketAddress(mcastaddr, PORT);
-        NetworkInterface netIf = NetworkInterface.getByName("bge0");
+        //NetworkInterface netIf = NetworkInterface.getByName("bge0");
+        NetworkInterface netIf = NetworkInterface.getByInetAddress(mcastaddr);
         multicastSocket.joinGroup(group, netIf);
+        //multicastSocket.joinGroup(mcastaddr);
 
         while (true) {
             DatagramPacket sendPacket = packetCreation(MESSAGE, mcastaddr);
 
             DatagramPacket packet = new DatagramPacket(buf, buf.length);
-            
-            //sendSocket.send(sendPacket);
 
             try {
                 multicastSocket.setSoTimeout(INTERVAL);
                 multicastSocket.receive(packet);
             } catch (SocketTimeoutException e) {
                 sendSocket.send(sendPacket);
+                continue;
             }
 
             String key = getStringKey(packet.getAddress(), packet.getPort());
@@ -53,7 +54,7 @@ public class Multicast{
             } else {
                 list.put(key, System.currentTimeMillis());
             }
-            
+
             deletingDisconnected();
         }
     }
@@ -78,7 +79,6 @@ public class Multicast{
                 printAddress();
             }
         }
-
     }
 
     public void printAddress() {
