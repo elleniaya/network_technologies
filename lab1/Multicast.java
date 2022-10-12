@@ -28,10 +28,8 @@ public class Multicast{
         multicastSocket = new MulticastSocket(PORT);
         InetAddress mcastaddr = InetAddress.getByName(ADDRESS);
         InetSocketAddress group = new InetSocketAddress(mcastaddr, PORT);
-        //NetworkInterface netIf = NetworkInterface.getByName("bge0");
         NetworkInterface netIf = NetworkInterface.getByInetAddress(mcastaddr);
         multicastSocket.joinGroup(group, netIf);
-        //multicastSocket.joinGroup(mcastaddr);
 
         while (true) {
             DatagramPacket sendPacket = packetCreation(MESSAGE, mcastaddr);
@@ -46,7 +44,7 @@ public class Multicast{
                 continue;
             }
 
-            String key = getStringKey(packet.getAddress(), packet.getPort());
+            String key = getStringKey(packet.getAddress());
 
             if (!list.containsKey(key)) {
                 list.put(key, System.currentTimeMillis());
@@ -59,8 +57,8 @@ public class Multicast{
         }
     }
 
-    private String getStringKey(InetAddress address, int port){
-        return address + ":" + port;
+    private String getStringKey(InetAddress address){
+        return address.toString();
     }
 
     private DatagramPacket packetCreation (String message, InetAddress address) {
@@ -71,11 +69,9 @@ public class Multicast{
     }
 
     private void deletingDisconnected() {
-        Iterator<Map.Entry<String, Long>> itr = list.entrySet().iterator();
-        while (itr.hasNext()) {
-            Map.Entry<String, Long> nextValue = itr.next();
-            if (System.currentTimeMillis() - nextValue.getValue() > TIMEOUT) {
-                itr.remove();
+        for (String key : list.keySet()) {
+            if (System.currentTimeMillis() - list.get(key) > TIMEOUT) {
+                list.remove(key);
                 printAddress();
             }
         }
@@ -83,9 +79,8 @@ public class Multicast{
 
     public void printAddress() {
         System.out.println("up-to-date list of connected copies of the program:");
-        Iterator<Map.Entry<String, Long>> itr = list.entrySet().iterator();
-        while (itr.hasNext()) {
-            System.out.println(itr.next().getKey());
+        for (String key : list.keySet()) {
+            System.out.println(key);
         }
     }
 }
