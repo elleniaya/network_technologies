@@ -20,7 +20,7 @@ public class Multicast{
         this.TIMEOUT = TIMEOUT;
     }
 
-    private HashMap<String, Long> list = new HashMap<>();
+    private HashMap<String, Long> addressList = new HashMap<>();
 
     public void run () throws IOException {
         sendSocket = new DatagramSocket();
@@ -29,10 +29,11 @@ public class Multicast{
         InetAddress mcastaddr = InetAddress.getByName(ADDRESS);
         InetSocketAddress group = new InetSocketAddress(mcastaddr, PORT);
         NetworkInterface netIf = NetworkInterface.getByInetAddress(mcastaddr);
+        System.out.println(netIf);
         multicastSocket.joinGroup(group, netIf);
 
         while (true) {
-            DatagramPacket sendPacket = packetCreation(MESSAGE, mcastaddr);
+            DatagramPacket sendPacket = packetCreation(MESSAGE, mcastaddr, PORT);
 
             DatagramPacket packet = new DatagramPacket(buf, buf.length);
 
@@ -46,11 +47,11 @@ public class Multicast{
 
             String key = getStringKey(packet.getAddress());
 
-            if (!list.containsKey(key)) {
-                list.put(key, System.currentTimeMillis());
+            if (!addressList.containsKey(key)) {
+                addressList.put(key, System.currentTimeMillis());
                 printAddress();
             } else {
-                list.put(key, System.currentTimeMillis());
+                addressList.put(key, System.currentTimeMillis());
             }
 
             deletingDisconnected();
@@ -61,17 +62,17 @@ public class Multicast{
         return address.toString();
     }
 
-    private DatagramPacket packetCreation (String message, InetAddress address) {
+    private DatagramPacket packetCreation (String message, InetAddress address, int port) {
         byte[] sendingDataBuffer = new byte[1024];
         sendingDataBuffer = message.getBytes();
-        DatagramPacket sendingPacket = new DatagramPacket(sendingDataBuffer, sendingDataBuffer.length, address, PORT);
+        DatagramPacket sendingPacket = new DatagramPacket(sendingDataBuffer, sendingDataBuffer.length, address, port);
         return sendingPacket;
     }
 
     private void deletingDisconnected() {
-        for (String key : list.keySet()) {
-            if (System.currentTimeMillis() - list.get(key) > TIMEOUT) {
-                list.remove(key);
+        for (String key : addressList.keySet()) {
+            if (System.currentTimeMillis() - addressList.get(key) > TIMEOUT) {
+                addressList.remove(key);
                 printAddress();
             }
         }
@@ -79,7 +80,7 @@ public class Multicast{
 
     public void printAddress() {
         System.out.println("up-to-date list of connected copies of the program:");
-        for (String key : list.keySet()) {
+        for (String key : addressList.keySet()) {
             System.out.println(key);
         }
     }
