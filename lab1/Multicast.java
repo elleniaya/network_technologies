@@ -12,6 +12,7 @@ public class Multicast{
     private final int INTERVAL;
     private final long TIMEOUT;
     private final String MESSAGE = "Hello";
+    private boolean flag = true;
 
     public Multicast(String ADDRESS, int PORT, int INTERVAL, long TIMEOUT) {
         this.ADDRESS = ADDRESS;
@@ -24,37 +25,43 @@ public class Multicast{
 
     public void run () throws IOException {
         sendSocket = new DatagramSocket();
-
         multicastSocket = new MulticastSocket(PORT);
-        InetAddress mcastaddr = InetAddress.getByName(ADDRESS);
-        InetSocketAddress group = new InetSocketAddress(mcastaddr, PORT);
-        NetworkInterface netIf = NetworkInterface.getByInetAddress(mcastaddr);
-        System.out.println(netIf);
-        multicastSocket.joinGroup(group, netIf);
+
+        InetAddress mAddr = InetAddress.getByName(ADDRESS);
+        SocketAddress group = new InetSocketAddress(mAddr, PORT);
+        NetworkInterface netInter = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        multicastSocket.joinGroup(group, netInter);
+
+        multicastSocket.setSoTimeout(INTERVAL);
+        DatagramPacket sendPacket = packetCreation(MESSAGE, mAddr, PORT);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length);
+
+        long time = System.currentTimeMillis();
 
         while (true) {
-            DatagramPacket sendPacket = packetCreation(MESSAGE, mcastaddr, PORT);
-
-            DatagramPacket packet = new DatagramPacket(buf, buf.length);
+            if (System.currentTimeMillis() - time > INTERVAL) {
+                sendSocket.send(sendPacket);
+                time = System.currentTimeMillis();
+            }
 
             try {
-                multicastSocket.setSoTimeout(INTERVAL);
                 multicastSocket.receive(packet);
-            } catch (SocketTimeoutException e) {
-                sendSocket.send(sendPacket);
-                continue;
+
+                String key = getStringKey(packet.getAddress());
+
+                if (!addressList.containsKey(key)) {
+                    addressList.put(key, System.currentTimeMillis());
+                    flag = true;
+                } else {
+                    addressList.put(key, System.currentTimeMillis());
+                }
+            } catch (SocketTimeoutException e){
+                //System.out.println("no message");
+                flag = false;
+            } finally {
+                deletingDisconnected();
+                if (flag) printAddress();
             }
-
-            String key = getStringKey(packet.getAddress());
-
-            if (!addressList.containsKey(key)) {
-                addressList.put(key, System.currentTimeMillis());
-                printAddress();
-            } else {
-                addressList.put(key, System.currentTimeMillis());
-            }
-
-            deletingDisconnected();
         }
     }
 
@@ -70,12 +77,22 @@ public class Multicast{
     }
 
     private void deletingDisconnected() {
+        ArrayList<String> rm = new ArrayList<String>();
+
         for (String key : addressList.keySet()) {
             if (System.currentTimeMillis() - addressList.get(key) > TIMEOUT) {
-                addressList.remove(key);
-                printAddress();
+                rm.add(key);
             }
         }
+
+        //System.out.println(rm.size());
+
+        if (rm.size() != 0) {
+            for (String key : rm) {
+                addressList.remove(key);
+            }
+            flag = true;
+        } 
     }
 
     public void printAddress() {
