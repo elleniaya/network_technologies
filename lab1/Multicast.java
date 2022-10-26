@@ -93,6 +93,9 @@ public class Multicast{
             }
             flag = true;
         } 
+        
+        //можно сделать в одну строчку:
+        //flag = flag || addressList.entrySet().removeIf(e -> System.currentTimeMillis() - e.getValue() > TIMEOUT);
     }
 
     public void printAddress() {
